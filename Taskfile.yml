@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+  test:
+    desc: Run tests
+    deps:
+      - deps
+    cmds:
+      - go test -race -v -covermode=atomic -coverprofile=coverage.out {{ .packages | catLines }}
+      - go tool cover -func coverage.out | grep total | awk '{print $3}'
+      - defer: rm coverage.out
+    vars:
+      packages:
+        sh: go list ./... | grep -v cmd
+    silent: true
+
+  lint:
+    desc: Run linter
+    deps:
+      - deps
+    cmds:
+      - golangci-lint version
+      - golangci-lint cache clean
+      - golangci-lint run ./... -v --timeout 240s
+    silent: true
+
+  deps:
+    run: once
+    desc: Download Go Modules
+    cmds:
+      - go mod download
+      - go mod verify
